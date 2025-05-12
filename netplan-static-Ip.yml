@@ -17,25 +17,16 @@
     - name: Get current IP address, CIDR, and gateway
       set_fact:
         static_ip: "{{ ansible_default_ipv4.address }}"
-        netmask_cidr: "{{ ansible_default_ipv4.network | ipaddr('prefix') }}"
+        netmask_cidr: "{{ ansible_default_ipv4.network | ansible.utils.ipaddr('prefix') }}"
         gateway_ip: "{{ ansible_default_ipv4.gateway }}"
 
     - name: Write new static Netplan configuration
-      copy:
+      template:
+        src: netplan_static.j2
         dest: "{{ netplan_new_file }}"
         owner: root
         group: root
         mode: '0644'
-        content: |
-          network:
-            version: 2
-            ethernets:
-              {{ primary_interface }}:
-                dhcp4: no
-                addresses: [{{ static_ip }}/{{ netmask_cidr }}]
-                gateway4: {{ gateway_ip }}
-                nameservers:
-                  addresses: [{{ dns_servers | join(', ') }}]
       notify: Apply new Netplan config
 
   handlers:
