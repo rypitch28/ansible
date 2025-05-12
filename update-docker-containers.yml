@@ -1,0 +1,38 @@
+---
+- name: Update all Docker containers
+  hosts: all
+  become: true  # Needed for Docker socket access
+  tasks:
+
+    - name: Ensure Docker SDK for Python is installed
+      pip:
+        name: docker
+        executable: pip3
+
+    - name: List running containers
+      community.docker.docker_container_info:
+        gather_network_info: false
+      register: docker_containers
+
+    - name: Pull latest images for each container
+      community.docker.docker_image:
+        name: "{{ item.Image }}"
+        source: pull
+      loop: "{{ docker_containers.containers }}"
+      loop_control:
+        label: "{{ item.Name }}"
+
+    - name: Recreate containers with updated images
+      community.docker.docker_container:
+        name: "{{ item.Name }}"
+        image: "{{ item.Image }}"
+        recreate: true
+        restart: true
+        state: started
+      loop: "{{ docker_containers.containers }}"
+      loop_control:
+        label: "{{ item.Name }}"
+
+    - name: Optional – Clean up unused images
+      community.docker.docker_prune:
+        images: true
