@@ -1,44 +1,24 @@
 ---
-- name: Update all Docker containers
+- name: Update all Docker containers with shell commands
   hosts: all
   become: true
   tasks:
 
-    - name: Install pip3 (if not already installed)
-      apt:
-        name: python3-pip
-        state: present
-        update_cache: yes
-
-    - name: Ensure Docker SDK for Python is installed
-      pip:
-        name: docker
-        executable: pip3
-
     - name: List running containers
-      community.docker.docker_container_info:
-        gather_network_info: false
-      register: docker_containers
+      shell: "docker ps --format '{{ '{{.Names}}' }}'"
+      register: running_containers
+      changed_when: false
 
-    - name: Pull latest images for each container
-      community.docker.docker_image:
-        name: "{{ item.Image }}"
-        source: pull
-      loop: "{{ docker_containers.containers }}"
+    - name: Pull latest images for running containers
+      shell: "docker inspect --format='{{ '{{.Config.Image}}' }}' {{ item }} | xargs docker pull"
+      loop: "{{ running_containers.stdout_lines }}"
       loop_control:
-        label: "{{ item.Name }}"
+        label: "{{ item }}"
 
-    - name: Recreate containers with updated images
-      community.docker.docker_container:
-        name: "{{ item.Name }}"
-        image: "{{ item.Image }}"
-        recreate: true
-        restart: true
-        state: started
-      loop: "{{ docker_containers.containers }}"
+    - name: Recreate and restart containers
+      shell: |
+        docker container rm -f {{ item }} &&
+        docker run -d --name {{ item }} $(docker inspect --format='{{ '{{range .Config.Env}}{{printf \"-e %q \" .}}{{end}} {{range .HostConfig.Binds}}{{printf \"-v %q \" .}}{{end}} {{range $p, $conf := .HostConfig.PortBindings}}{{printf \"-p %s:%s \" (index $conf 0).HostPort $p}}{{end}} {{.Config.Image}} {{range .Config.Cmd}}{{.}} {{end}}' {{ item }})
+      loop: "{{ running_containers.stdout_lines }}"
       loop_control:
-        label: "{{ item.Name }}"
-
-    - name: Optional – Clean up unused images
-      community.docker.docker_prune:
-        images: true
+        label: "{{ item }}"
