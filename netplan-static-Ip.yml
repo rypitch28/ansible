@@ -1,0 +1,44 @@
+---
+- name: Configure static IP via Netplan (non-destructive)
+  hosts: all
+  become: true
+  gather_facts: true
+
+  vars:
+    netplan_new_file: /etc/netplan/01-ansible-static.yaml
+    dns_servers:
+      - 8.8.8.8
+      - 1.1.1.1
+
+  tasks:
+    - name: Get primary network interface
+      set_fact:
+        primary_interface: "{{ ansible_default_ipv4.interface }}"
+
+    - name: Get current IP address, CIDR, and gateway
+      set_fact:
+        static_ip: "{{ ansible_default_ipv4.address }}"
+        netmask_cidr: "{{ ansible_default_ipv4.network | ipaddr('prefix') }}"
+        gateway_ip: "{{ ansible_default_ipv4.gateway }}"
+
+    - name: Write new static Netplan configuration
+      copy:
+        dest: "{{ netplan_new_file }}"
+        owner: root
+        group: root
+        mode: '0644'
+        content: |
+          network:
+            version: 2
+            ethernets:
+              {{ primary_interface }}:
+                dhcp4: no
+                addresses: [{{ static_ip }}/{{ netmask_cidr }}]
+                gateway4: {{ gateway_ip }}
+                nameservers:
+                  addresses: [{{ dns_servers | join(', ') }}]
+      notify: Apply new Netplan config
+
+  handlers:
+    - name: Apply new Netplan config
+      command: netplan apply
