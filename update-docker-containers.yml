@@ -1,24 +1,22 @@
 ---
-- name: Update all Docker containers with shell commands
+- name: Pull and restart all running Docker containers
   hosts: all
   become: true
   tasks:
 
-    - name: List running containers
-      shell: "docker ps --format '{{ '{{.Names}}' }}'"
-      register: running_containers
+    - name: Get names of all running containers
+      shell: docker ps --format '{{.Names}}'
+      register: container_names
       changed_when: false
 
-    - name: Pull latest images for running containers
-      shell: "docker inspect --format='{{ '{{.Config.Image}}' }}' {{ item }} | xargs docker pull"
-      loop: "{{ running_containers.stdout_lines }}"
+    - name: Pull latest image for each container
+      shell: docker inspect --format '{{.Config.Image}}' {{ item }} | xargs docker pull
+      loop: "{{ container_names.stdout_lines }}"
       loop_control:
         label: "{{ item }}"
 
-    - name: Recreate and restart containers
-      shell: |
-        docker container rm -f {{ item }} &&
-        docker run -d --name {{ item }} $(docker inspect --format='{{ '{{range .Config.Env}}{{printf \"-e %q \" .}}{{end}} {{range .HostConfig.Binds}}{{printf \"-v %q \" .}}{{end}} {{range $p, $conf := .HostConfig.PortBindings}}{{printf \"-p %s:%s \" (index $conf 0).HostPort $p}}{{end}} {{.Config.Image}} {{range .Config.Cmd}}{{.}} {{end}}' {{ item }})
-      loop: "{{ running_containers.stdout_lines }}"
+    - name: Restart containers
+      shell: docker restart {{ item }}
+      loop: "{{ container_names.stdout_lines }}"
       loop_control:
         label: "{{ item }}"
