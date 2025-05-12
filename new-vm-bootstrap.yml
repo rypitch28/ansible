@@ -1,0 +1,52 @@
+---
+- name: Bootstrap new Ubuntu VM
+  hosts: all
+  become: true
+  tasks:
+
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Upgrade installed packages
+      apt:
+        upgrade: yes
+
+    - name: Install common packages
+      apt:
+        name:
+          - curl
+          - wget
+          - git
+          - net-tools
+          - unzip
+          - vim
+          - htop
+        state: present
+
+    - name: Install QEMU Guest Agent
+      apt:
+        name: qemu-guest-agent
+        state: present
+
+    - name: Enable and start QEMU Guest Agent
+      systemd:
+        name: qemu-guest-agent
+        enabled: yes
+        state: started
+
+    - name: Ensure OpenSSH Server is installed
+      apt:
+        name: openssh-server
+        state: present
+
+    - name: Ensure SSH service is running
+      systemd:
+        name: ssh
+        enabled: yes
+        state: started
+
+    - name: Clean up unnecessary packages
+      apt:
+        autoremove: yes
