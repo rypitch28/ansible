@@ -1,0 +1,17 @@
+---
+- name: Ensure Python netaddr module is installed in Semaphore's Ansible venv
+  hosts: ubuntu
+  become: true
+  vars:
+    semaphore_venv_path: /opt/semaphore/apps/ansible/11.1.0/venv/bin/pip3
+
+  tasks:
+
+    - name: Check if pip exists in Semaphore venv
+      stat:
+        path: "{{ semaphore_venv_path }}"
+      register: pip_check
+
+    - name: Install netaddr in Semaphore's Ansible venv
+      command: "{{ semaphore_venv_path }} install netaddr"
+      when: pip_check.stat.exists
