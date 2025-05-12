@@ -35,6 +35,7 @@
         name: qemu-guest-agent
         enabled: yes
         state: started
+      when: ansible_facts.packages['qemu-guest-agent'] is defined
 
     - name: Ensure OpenSSH Server is installed
       apt:
