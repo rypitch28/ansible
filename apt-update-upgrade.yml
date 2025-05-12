@@ -1,7 +1,7 @@
 ---
-- name: Perform apt update and upgrade on all hosts
+- name: Perform basic apt update and upgrade on all hosts
   hosts: all
-  become: true  # << this is required for root access
+  become: true  # 👈 This enables sudo
   tasks:
 
     - name: Update APT cache
@@ -9,6 +9,6 @@
         update_cache: yes
         cache_valid_time: 3600
 
-    - name: Upgrade all packages
+    - name: Upgrade installed packages
       ansible.builtin.apt:
         upgrade: yes
