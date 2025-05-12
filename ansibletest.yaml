@@ -1,0 +1,22 @@
+---
+- name: Basic Ansible Test Playbook
+  hosts: all
+  become: true
+  tasks:
+
+    - name: Test connectivity with ping
+      ansible.builtin.ping:
+
+    - name: Check system uptime
+      ansible.builtin.command: uptime
+      register: uptime_output
+
+    - name: Show uptime in Ansible output
+      ansible.builtin.debug:
+        var: uptime_output.stdout
+
+    - name: Ensure htop is installed
+      ansible.builtin.apt:
+        name: htop
+        state: present
+        update_cache: yes
