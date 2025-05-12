@@ -7,8 +7,7 @@
   vars:
     netplan_new_file: /etc/netplan/01-ansible-static.yaml
     dns_servers:
-      - 8.8.8.8
-      - 1.1.1.1
+      - 10.101.0.5
 
   tasks:
     - name: Get primary network interface
