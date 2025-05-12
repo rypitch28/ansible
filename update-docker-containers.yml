@@ -5,12 +5,14 @@
   tasks:
 
     - name: Get names of all running containers
-      shell: docker ps --format '{{{{.Names}}}}'
+      shell: >
+        docker ps --format '{% raw %}{{.Names}}{% endraw %}'
       register: container_names
       changed_when: false
 
     - name: Pull latest image for each container
-      shell: docker inspect --format '{{{{.Config.Image}}}}' {{ item }} | xargs docker pull
+      shell: >
+        docker inspect --format '{% raw %}{{.Config.Image}}{% endraw %}' {{ item }} | xargs docker pull
       loop: "{{ container_names.stdout_lines }}"
       loop_control:
         label: "{{ item }}"
