@@ -1,8 +1,14 @@
 ---
 - name: Update all Docker containers
   hosts: all
-  become: true  # Needed for Docker socket access
+  become: true
   tasks:
+
+    - name: Install pip3 (if not already installed)
+      apt:
+        name: python3-pip
+        state: present
+        update_cache: yes
 
     - name: Ensure Docker SDK for Python is installed
       pip:
