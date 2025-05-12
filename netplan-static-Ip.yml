@@ -1,5 +1,5 @@
 ---
-- name: Configure static IP via Netplan (using /24 subnet)
+- name: Configure static IP via Netplan (with /24 and resolv.conf)
   hosts: all
   become: true
   gather_facts: true
@@ -8,6 +8,7 @@
     netplan_new_file: /etc/netplan/01-ansible-static.yaml
     dns_servers:
       - 10.101.0.5
+    search_domain: raspinwall.com
 
   tasks:
 
@@ -21,7 +22,7 @@
         gateway_ip: "{{ ansible_default_ipv4.gateway }}"
         netmask_cidr: "24"
 
-    - name: Write static Netplan config file with /24
+    - name: Write static Netplan config file
       copy:
         dest: "{{ netplan_new_file }}"
         owner: root
@@ -37,9 +38,20 @@
                   - "{{ static_ip }}/{{ netmask_cidr }}"
                 gateway4: "{{ gateway_ip }}"
                 nameservers:
+                  search: [{{ search_domain }}]
                   addresses:
                     - {{ dns_servers[0] }}
       notify: Apply new Netplan config
+
+    - name: Overwrite /etc/resolv.conf with DNS and search domain
+      copy:
+        dest: /etc/resolv.conf
+        content: |
+          nameserver {{ dns_servers[0] }}
+          search {{ search_domain }}
+        owner: root
+        group: root
+        mode: '0644'
 
   handlers:
     - name: Apply new Netplan config
