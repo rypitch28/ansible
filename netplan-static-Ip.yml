@@ -1,5 +1,5 @@
 ---
-- name: Configure static IP via Netplan (simple and self-contained)
+- name: Configure static IP via Netplan (using /24 subnet)
   hosts: all
   become: true
   gather_facts: true
@@ -15,13 +15,13 @@
       set_fact:
         primary_interface: "{{ ansible_default_ipv4.interface }}"
 
-    - name: Get current IP address, CIDR, and gateway
+    - name: Get current IP address and gateway
       set_fact:
         static_ip: "{{ ansible_default_ipv4.address }}"
-        netmask_cidr: "{{ ansible_default_ipv4.network | ansible.utils.ipaddr('prefix') }}"
         gateway_ip: "{{ ansible_default_ipv4.gateway }}"
+        netmask_cidr: "24"
 
-    - name: Write static Netplan config file (no template required)
+    - name: Write static Netplan config file with /24
       copy:
         dest: "{{ netplan_new_file }}"
         owner: root
